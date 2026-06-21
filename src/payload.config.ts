@@ -27,6 +27,16 @@ export default buildConfig({
   collections: [Posts, Categories, Authors, Tags, Comments, Media, Users],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
+  // URL publica do backend (Portainer). Usada pra montar links absolutos.
+  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000',
+  // Libera o frontend (Cloudflare Pages) a consumir a API e enviar comentarios.
+  // FRONTEND_URL = dominio do site publico (ex.: https://doramauniverse.com)
+  cors: [process.env.FRONTEND_URL, process.env.PAYLOAD_PUBLIC_SERVER_URL].filter(
+    Boolean,
+  ) as string[],
+  csrf: [process.env.FRONTEND_URL, process.env.PAYLOAD_PUBLIC_SERVER_URL].filter(
+    Boolean,
+  ) as string[],
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
