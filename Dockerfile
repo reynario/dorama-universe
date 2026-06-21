@@ -9,9 +9,13 @@ WORKDIR /app
 
 # ---------- dependencias ----------
 FROM base AS deps
-# pnpm-workspace.yaml e necessario aqui: contem onlyBuiltDependencies (sharp etc.)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+# O pnpm 11 nao executa os build scripts das dependencias por padrao
+# (erro ERR_PNPM_IGNORED_BUILDS). Por isso instalamos e, em seguida, compilamos
+# explicitamente o sharp (binario nativo essencial para o Payload) e o esbuild.
+# O "|| true" tolera o aviso de build ignorado; o passo seguinte e que importa.
+RUN pnpm install --frozen-lockfile --prod=false || true
+RUN pnpm rebuild sharp esbuild
 
 # ---------- build ----------
 FROM base AS builder
