@@ -18,7 +18,8 @@ services:
     container_name: dorama-universe
     restart: unless-stopped
     ports:
-      - '3000:3000'
+      # 3000 estava ocupada no servidor; publicamos na 3005 do host.
+      - '3005:3000'
     environment:
       NODE_ENV: production
       # --- Supabase (banco) ---

@@ -8,7 +8,10 @@ services:
   dorama-universe:
     image: dorama-universe:latest
     ports:
-      - '3000:3000'
+      # host:container -> a porta 3000 ja estava ocupada no servidor, entao
+      # publicamos na 3005 do host. Aponte o proxy reverso para a porta 3005.
+      # Pode trocar 3005 por qualquer porta livre do servidor.
+      - '3005:3000'
     environment:
       NODE_ENV: production
       # --- Supabase (banco) ---
