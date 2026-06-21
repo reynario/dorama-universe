@@ -9,7 +9,8 @@ WORKDIR /app
 
 # ---------- dependencias ----------
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+# pnpm-workspace.yaml e necessario aqui: contem onlyBuiltDependencies (sharp etc.)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # ---------- build ----------
