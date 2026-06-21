@@ -1,0 +1,8 @@
+# Variaveis do frontend (copie para .dev.vars no dev local e configure no painel da Cloudflare).
+# URL do backend Payload (Portainer):
+NEXT_PUBLIC_API_URL=http://localhost:3000
+# Dominio publico do R2 (opcional; se vazio, as imagens vem pelo backend):
+NEXT_PUBLIC_MEDIA_BASE=
+# Google AdSense:
+NEXT_PUBLIC_ADSENSE_CLIENT=ca-pub-8751006394850232
+NEXT_PUBLIC_ADSENSE_SLOT_HOME=

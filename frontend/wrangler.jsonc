@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dorama-universe",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+  // As variaveis NEXT_PUBLIC_* sao definidas no painel da Cloudflare (build vars):
+  //   NEXT_PUBLIC_API_URL           -> ex.: https://api.doramauniverse.com
+  //   NEXT_PUBLIC_MEDIA_BASE        -> ex.: https://cdn.doramauniverse.com (opcional)
+  //   NEXT_PUBLIC_ADSENSE_CLIENT    -> ca-pub-8751006394850232
+}
