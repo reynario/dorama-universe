@@ -1,0 +1,26 @@
+# dependencias e build (reinstalados/gerados dentro da imagem)
+node_modules
+.next
+
+# segredos (nunca vao pra imagem; entram por variaveis de ambiente no runtime)
+.env
+.env.*
+
+# git e infra
+.git
+.gitignore
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# conteudo pesado que nao e necessario em producao
+import
+# (a pasta import tem o XML de 84MB do WordPress)
+
+# testes e artefatos de dev
+tests
+playwright.config.ts
+*.log
+npm-debug.log*
+coverage
+.DS_Store

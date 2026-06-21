@@ -1,0 +1,15 @@
+LOGO E FAVICON
+
+Por enquanto o site usa uma logo/icone PROVISORIOS em SVG (logo.svg e favicon.svg),
+na identidade Dorama Universe (amarelo + roxo).
+
+Para usar a SUA arte oficial, voce tem duas opcoes:
+
+  Opcao A (mais simples): substitua os arquivos
+    - public/logo.svg     -> sua arte "DORAMA UNIVERSE" (ideal: SVG ou PNG largo)
+    - public/favicon.svg  -> seu icone "D"
+
+  Opcao B: salve como PNG (public/logo.png e public/favicon.png) e me avise
+           que eu troco as referencias no codigo.
+
+Depois de salvar, recarregue a pagina.

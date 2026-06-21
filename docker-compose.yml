@@ -1,0 +1,37 @@
+# Stack do Portainer para o Dorama Universe.
+# Um unico container: o app (Next.js + Payload).
+# Banco = Supabase e imagens = Cloudflare R2 sao servicos externos (nao precisam de container).
+#
+# No Portainer: Stacks > Add stack > cole este arquivo e defina as variaveis de
+# ambiente na secao "Environment variables" da tela do stack.
+
+services:
+  dorama-universe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # publicas (entram no build do front)
+        NEXT_PUBLIC_ADSENSE_CLIENT: ${NEXT_PUBLIC_ADSENSE_CLIENT}
+        NEXT_PUBLIC_ADSENSE_SLOT_HOME: ${NEXT_PUBLIC_ADSENSE_SLOT_HOME}
+    image: dorama-universe:latest
+    container_name: dorama-universe
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      # --- Supabase (banco) ---
+      DATABASE_URL: ${DATABASE_URL}
+      # --- Payload ---
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      # IMPORTANTE: em producao use o dominio real, ex.: https://doramauniverse.com
+      PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL}
+      # --- Cloudflare R2 (imagens) ---
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      # --- Google AdSense ---
+      NEXT_PUBLIC_ADSENSE_CLIENT: ${NEXT_PUBLIC_ADSENSE_CLIENT}
+      NEXT_PUBLIC_ADSENSE_SLOT_HOME: ${NEXT_PUBLIC_ADSENSE_SLOT_HOME}
