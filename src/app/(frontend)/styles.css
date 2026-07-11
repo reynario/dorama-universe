@@ -34,6 +34,17 @@ a {
   text-decoration: none;
 }
 
+/* Titulos com a fonte de destaque (Sora) */
+.section__title,
+.card__title,
+.featured__title,
+.article__title,
+.comments h3,
+.empty h1 {
+  font-family: var(--font-display, inherit), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -514,6 +525,67 @@ img {
   padding: 16px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+
+/* ---------- Like button ---------- */
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.like-btn:hover {
+  border-color: var(--purple);
+  transform: scale(1.04);
+}
+.like-btn--liked {
+  background: #fdeef3;
+  border-color: #f3b8cd;
+  cursor: default;
+}
+.like-btn--liked:hover {
+  transform: none;
+}
+
+/* ---------- Pagination ---------- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 34px;
+}
+.page-btn {
+  padding: 9px 20px;
+  border-radius: 999px;
+  background: var(--purple);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+.page-btn:hover {
+  background: var(--purple-dark);
+}
+.page-info {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- Related posts ---------- */
+.related {
+  margin-top: 44px;
+}
+.related .grid {
+  margin-top: 18px;
 }
 
 /* ---------- Comments ---------- */

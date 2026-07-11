@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getComments, getPostBySlug } from '@/lib/api'
+import { getComments, getPostBySlug, getRelated } from '@/lib/api'
 import type { Author, Category, Tag } from '@/lib/types'
 import Header from '@/components/Header'
 import CommentForm from '@/components/CommentForm'
 import AdSlot from '@/components/AdSlot'
+import LikeButton from '@/components/LikeButton'
+import PostCard from '@/components/PostCard'
 import { fixContentImages, formatDateLong, mediaUrl, mediaAlt } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +29,10 @@ export default async function PostPage({ params }: Props) {
   const author = post.author as Author | undefined
   const tags = (post.tags ?? []).filter((t): t is Tag => typeof t === 'object')
   const hero = mediaUrl(post.heroImage)
-  const { docs: comments, totalDocs } = await getComments(post.id)
+  const [{ docs: comments, totalDocs }, { docs: related }] = await Promise.all([
+    getComments(post.id),
+    category ? getRelated(category.id, post.id) : Promise.resolve({ docs: [] as never[] }),
+  ])
 
   return (
     <>
@@ -82,11 +87,22 @@ export default async function PostPage({ params }: Props) {
         )}
 
         <div className="article__stats">
-          <span className="stat">❤️ {post.likes ?? 0} curtidas</span>
+          <LikeButton postId={post.id} initialLikes={post.likes ?? 0} />
           <span className="stat">💬 {totalDocs} comentários</span>
         </div>
 
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME} />
+
+        {related.length > 0 && (
+          <section className="related">
+            <h2 className="section__title">Leia também</h2>
+            <div className="grid">
+              {related.map((r) => (
+                <PostCard key={r.id} post={r} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="comments">
           <h3>Comentários ({totalDocs})</h3>

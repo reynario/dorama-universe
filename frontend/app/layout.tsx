@@ -1,6 +1,14 @@
 import React from 'react'
 import Script from 'next/script'
+import { Sora } from 'next/font/google'
 import './styles.css'
+
+// Fonte de destaque (titulos). Baixada no build e servida junto com o site.
+const sora = Sora({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  variable: '--font-display',
+})
 
 export const metadata = {
   title: 'Dorama Universe — Doramas & K-Pop',
@@ -13,7 +21,7 @@ const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={sora.variable}>
       <body>
         {adsenseClient && (
           <Script

@@ -9,6 +9,8 @@ import type { Category, Author, Tag } from '@/payload-types'
 import Header from '@/components/Header'
 import CommentForm from '@/components/CommentForm'
 import AdSlot from '@/components/AdSlot'
+import LikeButton from '@/components/LikeButton'
+import PostCard from '@/components/PostCard'
 import { formatDateLong, mediaUrl, mediaAlt } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -50,6 +52,23 @@ export default async function PostPage({ params }: Props) {
     depth: 0,
     limit: 100,
   })
+
+  // "Leia tambem": posts recentes da mesma categoria
+  const { docs: related } = category
+    ? await payload.find({
+        collection: 'posts',
+        where: {
+          and: [
+            { category: { equals: category.id } },
+            { id: { not_equals: post.id } },
+            { _status: { equals: 'published' } },
+          ],
+        },
+        sort: '-publishedAt',
+        depth: 2,
+        limit: 3,
+      })
+    : { docs: [] }
 
   return (
     <>
@@ -105,11 +124,22 @@ export default async function PostPage({ params }: Props) {
         )}
 
         <div className="article__stats">
-          <span className="stat">❤️ {post.likes ?? 0} curtidas</span>
+          <LikeButton postId={post.id} initialLikes={post.likes ?? 0} />
           <span className="stat">💬 {totalDocs} comentários</span>
         </div>
 
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME} label="Anúncio" />
+
+        {related.length > 0 && (
+          <section className="related">
+            <h2 className="section__title">Leia também</h2>
+            <div className="grid">
+              {related.map((r) => (
+                <PostCard key={r.id} post={r} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="comments">
           <h3>Comentários ({totalDocs})</h3>

@@ -15,6 +15,31 @@ export const Posts: CollectionConfig = {
   versions: {
     drafts: true,
   },
+  // Endpoint publico para curtir um post: POST /api/posts/:id/like
+  // Incrementa o contador no servidor (o visitante nao precisa de login).
+  endpoints: [
+    {
+      path: '/:id/like',
+      method: 'post',
+      handler: async (req) => {
+        const id = Number(req.routeParams?.id)
+        if (!id) return Response.json({ error: 'id invalido' }, { status: 400 })
+        const post = await req.payload
+          .findByID({ collection: 'posts', id, depth: 0 })
+          .catch(() => null)
+        if (!post) return Response.json({ error: 'post nao encontrado' }, { status: 404 })
+        const likes = (post.likes ?? 0) + 1
+        await req.payload.update({
+          collection: 'posts',
+          id,
+          data: { likes },
+          depth: 0,
+          overrideAccess: true,
+        })
+        return Response.json({ likes })
+      },
+    },
+  ],
   fields: [
     {
       name: 'title',

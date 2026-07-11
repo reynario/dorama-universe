@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getApprovedComments, getCategories, getPosts } from '@/lib/api'
 import type { Post } from '@/lib/types'
 import Header from '@/components/Header'
@@ -8,17 +9,19 @@ import AdSlot from '@/components/AdSlot'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { searchParams: Promise<{ categoria?: string; q?: string }> }
+type Props = { searchParams: Promise<{ categoria?: string; q?: string; page?: string }> }
 
 export default async function HomePage({ searchParams }: Props) {
-  const { categoria, q } = await searchParams
+  const { categoria, q, page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
   const { docs: categories } = await getCategories()
   const cat = categoria ? categories.find((c) => c.slug === categoria) : undefined
 
-  const [{ docs: posts }, { docs: comments }] = await Promise.all([
-    getPosts({ categoryId: cat?.id, q }),
+  const [postsRes, { docs: comments }] = await Promise.all([
+    getPosts({ categoryId: cat?.id, q, page }),
     getApprovedComments(),
   ])
+  const { docs: posts, totalPages, page: currentPage } = postsRes
 
   const counts = new Map<number, number>()
   for (const c of comments) {
@@ -27,8 +30,19 @@ export default async function HomePage({ searchParams }: Props) {
   }
   const countFor = (p: Post) => counts.get(p.id) ?? 0
 
-  const featured = posts.find((p) => p.featured) ?? posts[0]
-  const rest = posts.filter((p) => p.id !== featured?.id)
+  // Destaque so na primeira pagina
+  const isFirstPage = (currentPage ?? 1) === 1
+  const featured = isFirstPage ? (posts.find((p) => p.featured) ?? posts[0]) : undefined
+  const rest = featured ? posts.filter((p) => p.id !== featured.id) : posts
+
+  const pageHref = (p: number) => {
+    const u = new URLSearchParams()
+    if (categoria) u.set('categoria', categoria)
+    if (q) u.set('q', q)
+    if (p > 1) u.set('page', String(p))
+    const s = u.toString()
+    return s ? `/?${s}` : '/'
+  }
 
   return (
     <>
@@ -47,20 +61,44 @@ export default async function HomePage({ searchParams }: Props) {
           </div>
         ) : (
           <>
-            <section className="section">
-              <h2 className="section__title">Novidades em destaque no Hallyu</h2>
-              {featured && <FeaturedPost post={featured} commentCount={countFor(featured)} />}
-            </section>
+            {featured && (
+              <>
+                <section className="section">
+                  <h2 className="section__title">Novidades em destaque no Hallyu</h2>
+                  <FeaturedPost post={featured} commentCount={countFor(featured)} />
+                </section>
 
-            <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME} />
+                <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME} />
+              </>
+            )}
 
             <section className="section">
-              <h2 className="section__title">Todas as publicações recentes</h2>
+              <h2 className="section__title">
+                {isFirstPage ? 'Todas as publicações recentes' : `Publicações — página ${currentPage}`}
+              </h2>
               <div className="grid">
                 {rest.map((post) => (
                   <PostCard key={post.id} post={post} commentCount={countFor(post)} />
                 ))}
               </div>
+
+              {(totalPages ?? 1) > 1 && (
+                <nav className="pagination" aria-label="Paginação">
+                  {(currentPage ?? 1) > 1 && (
+                    <Link href={pageHref((currentPage ?? 1) - 1)} className="page-btn">
+                      ← Anterior
+                    </Link>
+                  )}
+                  <span className="page-info">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  {(currentPage ?? 1) < (totalPages ?? 1) && (
+                    <Link href={pageHref((currentPage ?? 1) + 1)} className="page-btn">
+                      Próxima →
+                    </Link>
+                  )}
+                </nav>
+              )}
             </section>
           </>
         )}
