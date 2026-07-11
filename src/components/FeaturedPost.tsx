@@ -58,8 +58,11 @@ export default function FeaturedPost({ post, commentCount = 0 }: Props) {
         <div className="featured__footer">
           <span className="featured__author">{author?.name ?? 'Redação'}</span>
           <div className="featured__stats">
-            <span className="stat">❤️ {post.likes ?? 0}</span>
-            <span className="stat">💬 {commentCount}</span>
+            {(post.likes ?? 0) > 0 && <span className="stat">❤️ {post.likes}</span>}
+            {commentCount > 0 && <span className="stat">💬 {commentCount}</span>}
+            <Link href={`/posts/${post.slug}`} className="card__more">
+              Ler artigo →
+            </Link>
           </div>
         </div>
       </div>

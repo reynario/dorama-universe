@@ -58,8 +58,11 @@ export default function PostCard({ post, commentCount = 0 }: Props) {
         )}
 
         <div className="card__footer">
-          <span className="stat">❤️ {post.likes ?? 0}</span>
-          <span className="stat">💬 {commentCount}</span>
+          {(post.likes ?? 0) > 0 && <span className="stat">❤️ {post.likes}</span>}
+          {commentCount > 0 && <span className="stat">💬 {commentCount}</span>}
+          <Link href={`/posts/${post.slug}`} className="card__more">
+            Ler mais →
+          </Link>
         </div>
       </div>
     </article>

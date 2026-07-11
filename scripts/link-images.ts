@@ -107,21 +107,27 @@ console.log(`Indexando imagens locais em ${UPLOADS} ...`)
 indexDir(UPLOADS)
 console.log(`Arquivos locais indexados: ${localIndex.size}`)
 
-const uploadCache = new Map<string, { id: number; url: string }>()
+const uploadCache = new Map<string, { id: number; url: string } | null>()
 async function uploadLocal(localPath: string, alt: string) {
-  const cached = uploadCache.get(localPath)
-  if (cached) return cached
-  const buffer = readFileSync(localPath)
-  const name = path.basename(localPath)
-  const ext = path.extname(name).toLowerCase()
-  const media = await payload.create({
-    collection: 'media',
-    data: { alt: alt || name },
-    file: { data: buffer, mimetype: MIME[ext] || 'image/webp', name, size: buffer.length },
-  })
-  const res = { id: media.id as number, url: (media.url as string) || '' }
-  uploadCache.set(localPath, res)
-  return res
+  if (uploadCache.has(localPath)) return uploadCache.get(localPath)!
+  try {
+    const buffer = readFileSync(localPath)
+    const name = path.basename(localPath)
+    const ext = path.extname(name).toLowerCase()
+    const media = await payload.create({
+      collection: 'media',
+      data: { alt: alt || name },
+      file: { data: buffer, mimetype: MIME[ext] || 'image/webp', name, size: buffer.length },
+    })
+    const res = { id: media.id as number, url: (media.url as string) || '' }
+    uploadCache.set(localPath, res)
+    return res
+  } catch (err) {
+    // Arquivo problematico (ex.: AVIF que o sharp nao decodifica): pula e segue.
+    console.warn(`  ! upload falhou, pulando: ${path.basename(localPath)} (${(err as Error).message})`)
+    uploadCache.set(localPath, null)
+    return null
+  }
 }
 
 async function rewriteContent(html: string, alt: string): Promise<{ html: string; n: number }> {
@@ -136,7 +142,7 @@ async function rewriteContent(html: string, alt: string): Promise<{ html: string
     const local = resolveLocal(url)
     if (!local) continue
     const up = await uploadLocal(local, alt)
-    if (!up.url) continue
+    if (!up || !up.url) continue
     out = out.split(url).join(up.url)
     n++
   }
@@ -204,8 +210,10 @@ for (const it of items) {
     }
     if (local) {
       const up = await uploadLocal(local, title)
-      patch.heroImage = up.id
-      heroSet++
+      if (up) {
+        patch.heroImage = up.id
+        heroSet++
+      }
     }
   }
 
