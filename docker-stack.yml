@@ -19,6 +19,7 @@ services:
       # --- Payload ---
       PAYLOAD_SECRET: ${PAYLOAD_SECRET}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
       # --- Cloudflare R2 (imagens) ---
       R2_BUCKET: ${R2_BUCKET}
       R2_ENDPOINT: ${R2_ENDPOINT}
@@ -27,7 +28,21 @@ services:
       # --- Google AdSense ---
       NEXT_PUBLIC_ADSENSE_CLIENT: ${NEXT_PUBLIC_ADSENSE_CLIENT}
       NEXT_PUBLIC_ADSENSE_SLOT_HOME: ${NEXT_PUBLIC_ADSENSE_SLOT_HOME}
+    networks:
+      - RNNet
     deploy:
       replicas: 1
       restart_policy:
         condition: any
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=RNNet
+        - traefik.http.routers.doramaapi.rule=Host(`api.doramauniverse.com`)
+        - traefik.http.routers.doramaapi.entrypoints=websecure
+        - traefik.http.routers.doramaapi.tls=true
+        - traefik.http.routers.doramaapi.tls.certresolver=letsencryptresolver
+        - traefik.http.services.doramaapi.loadbalancer.server.port=3000
+
+networks:
+  RNNet:
+    external: true

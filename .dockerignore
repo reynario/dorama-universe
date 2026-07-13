@@ -16,6 +16,8 @@ docker-compose.yml
 # conteudo pesado que nao e necessario em producao
 import
 # (a pasta import tem o XML de 84MB do WordPress)
+# frontend/ e um subprojeto legado (Cloudflare Workers); o site roda a partir de src/
+frontend
 
 # testes e artefatos de dev
 tests

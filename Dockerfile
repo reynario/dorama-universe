@@ -56,4 +56,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["pnpm", "start"]
+# Chama o Next diretamente: "pnpm start" exigiria que o corepack baixasse o pnpm
+# em runtime no cache do usuario nextjs (sem home gravavel -> EACCES).
+ENV NODE_OPTIONS=--no-deprecation
+CMD ["node", "node_modules/next/dist/bin/next", "start"]
