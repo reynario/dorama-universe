@@ -11,7 +11,7 @@ import CommentForm from '@/components/CommentForm'
 import AdSlot from '@/components/AdSlot'
 import LikeButton from '@/components/LikeButton'
 import PostCard from '@/components/PostCard'
-import { formatDateLong, mediaUrl, mediaAlt } from '@/lib/utils'
+import { formatDateLong, mediaUrl, mediaAlt, prepareContentHtml } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -109,7 +109,7 @@ export default async function PostPage({ params }: Props) {
           {post.content ? (
             <RichText data={post.content as SerializedEditorState} />
           ) : post.contentHtml ? (
-            <div dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
+            <div dangerouslySetInnerHTML={{ __html: prepareContentHtml(post.contentHtml) }} />
           ) : null}
         </div>
 

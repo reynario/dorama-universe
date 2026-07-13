@@ -10,12 +10,10 @@
   },
   "observability": {
     "enabled": true
-  },
-  // Dominio do site (substitui o registro DNS antigo da hospedagem desativada)
-  "routes": [
-    { "pattern": "doramauniverse.com", "custom_domain": true },
-    { "pattern": "www.doramauniverse.com", "custom_domain": true }
-  ]
+  }
+  // Dominios (doramauniverse.com / www) foram anexados pelo painel da Cloudflare
+  // (Workers > dorama-universe > Settings > Domains). Nao gerenciar por aqui:
+  // a API de domains falha com o token OAuth atual.
   // As variaveis NEXT_PUBLIC_* sao definidas no painel da Cloudflare (build vars):
   //   NEXT_PUBLIC_API_URL           -> ex.: https://api.doramauniverse.com
   //   NEXT_PUBLIC_MEDIA_BASE        -> ex.: https://cdn.doramauniverse.com (opcional)
