@@ -10,7 +10,12 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  // Dominio do site (substitui o registro DNS antigo da hospedagem desativada)
+  "routes": [
+    { "pattern": "doramauniverse.com", "custom_domain": true },
+    { "pattern": "www.doramauniverse.com", "custom_domain": true }
+  ]
   // As variaveis NEXT_PUBLIC_* sao definidas no painel da Cloudflare (build vars):
   //   NEXT_PUBLIC_API_URL           -> ex.: https://api.doramauniverse.com
   //   NEXT_PUBLIC_MEDIA_BASE        -> ex.: https://cdn.doramauniverse.com (opcional)
