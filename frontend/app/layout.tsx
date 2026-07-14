@@ -11,10 +11,16 @@ const sora = Sora({
 })
 
 export const metadata = {
+  metadataBase: new URL('https://doramauniverse.com'),
   title: 'Dorama Universe — Doramas & K-Pop',
   description:
     'Notícias, resenhas e novidades sobre K-dramas, atores coreanos e K-Pop. O universo Hallyu em um só lugar.',
   icons: { icon: '/favicon.svg' },
+  openGraph: {
+    siteName: 'Dorama Universe',
+    type: 'website',
+    locale: 'pt_BR',
+  },
 }
 
 const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT

@@ -17,7 +17,26 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post não encontrado — Dorama Universe' }
-  return { title: `${post.title} — Dorama Universe`, description: post.excerpt }
+  const hero = mediaUrl(post.heroImage)
+  return {
+    title: `${post.title} — Dorama Universe`,
+    description: post.excerpt,
+    alternates: { canonical: `/posts/${post.slug}` },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      publishedTime: post.publishedAt,
+      url: `/posts/${post.slug}`,
+      images: hero ? [{ url: hero }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: hero ? [hero] : undefined,
+    },
+  }
 }
 
 export default async function PostPage({ params }: Props) {
