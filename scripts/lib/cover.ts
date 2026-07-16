@@ -21,6 +21,7 @@ export type CoverOptions = {
   category?: string // texto do selo. Ex.: "K-Drama"
   query?: string // termo de busca no TMDB. Ex.: "Lovely Runner"
   type?: 'tv' | 'movie' | 'person' | 'multi' // padrao: multi
+  tmdbId?: number // id exato no TMDB (pula a busca; exige type tv/movie/person)
 }
 
 export type CoverResult = {
@@ -51,6 +52,27 @@ async function tmdbFetch(path: string): Promise<any | null> {
     console.warn(`  [aviso] TMDB indisponivel: ${(err as Error).message}`)
     return null
   }
+}
+
+// Busca a imagem de um item exato do TMDB (quando a busca por texto acha o
+// resultado errado — ex.: filme homonimo).
+async function findTmdbImageById(
+  id: number,
+  type: 'tv' | 'movie' | 'person',
+): Promise<TmdbImage | null> {
+  const r = await tmdbFetch(`/${type}/${id}?language=pt-BR`)
+  if (!r) return null
+  const label = r.name || r.title || String(id)
+  if (r.backdrop_path) {
+    return { url: `https://image.tmdb.org/t/p/w1280${r.backdrop_path}`, portrait: false, label }
+  }
+  if (r.profile_path) {
+    return { url: `https://image.tmdb.org/t/p/h632${r.profile_path}`, portrait: true, label }
+  }
+  if (r.poster_path) {
+    return { url: `https://image.tmdb.org/t/p/w780${r.poster_path}`, portrait: true, label }
+  }
+  return null
 }
 
 async function findTmdbImage(query: string, type: CoverOptions['type']): Promise<TmdbImage | null> {
@@ -174,8 +196,11 @@ export async function generateCover(opts: CoverOptions): Promise<CoverResult> {
   let tmdbUsed = false
   let tmdbLabel: string | undefined
 
-  if (opts.query) {
-    const img = await findTmdbImage(opts.query, opts.type)
+  if (opts.query || opts.tmdbId) {
+    const img =
+      opts.tmdbId && opts.type && opts.type !== 'multi'
+        ? await findTmdbImageById(opts.tmdbId, opts.type)
+        : await findTmdbImage(opts.query!, opts.type)
     if (img) {
       const raw = await download(img.url)
       if (raw) {

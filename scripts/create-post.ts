@@ -50,7 +50,13 @@ type ArticleJson = {
   metaDescription?: string
   faq?: { question: string; answer: string }[]
   sources?: { url: string; title?: string }[]
-  cover?: { query?: string; type?: 'tv' | 'movie' | 'person' | 'multi'; alt?: string; file?: string }
+  cover?: {
+    query?: string
+    type?: 'tv' | 'movie' | 'person' | 'multi'
+    tmdbId?: number
+    alt?: string
+    file?: string
+  }
   leadId?: number
   publish?: boolean
   featured?: boolean
@@ -149,6 +155,7 @@ if (art.cover?.file && existsSync(art.cover.file)) {
     category: category.name,
     query: art.cover?.query,
     type: art.cover?.type,
+    tmdbId: art.cover?.tmdbId,
   })
   coverBuffer = gen.buffer
   coverNote = gen.tmdbUsed ? `TMDB (${gen.tmdbLabel})` : 'template brand (sem TMDB)'

@@ -74,6 +74,18 @@ para buscar no TMDB (`type`: `tv`, `movie`, `person` ou `multi`) e `cover.alt`
 descritivo. Sem resultado no TMDB, o script cai automaticamente no template
 brand (degradê + título) — nunca usar imagem de outro site.
 
+**Conferir a capa depois de criar o post**: o log do create-post mostra qual
+item do TMDB foi usado (ex.: `capa: TMDB (Run BTS!)`). Nomes de grupos de
+k-pop têm homônimos (ex.: "Stray Kids" é também um filme indie). Se o item
+estiver errado, listar os candidatos na API do TMDB e trocar com id exato:
+
+```powershell
+$env:POST_ID='<id>'; $env:TYPE='movie'; $env:TMDB_ID='<id-tmdb>'; pnpm payload run scripts/update-cover.ts
+```
+
+Para grupos de k-pop, os filmes de shows/concertos costumam ter as melhores
+fotos (palco, plateia). Baixe a capa gerada e olhe a imagem antes de concluir.
+
 ## Passo 5 — Publicar (como rascunho)
 
 Salvar o JSON no scratchpad (um arquivo por artigo) no formato documentado em
