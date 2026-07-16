@@ -74,6 +74,7 @@ export interface Config {
     comments: Comment;
     media: Media;
     users: User;
+    leads: Lead;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    leads: LeadsSelect<false> | LeadsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -166,6 +168,36 @@ export interface Post {
    */
   contentHtml?: string | null;
   tags?: (number | Tag)[] | null;
+  seo?: {
+    /**
+     * Titulo para o Google (ate 60-65 caracteres). Vazio = usa o titulo do post.
+     */
+    metaTitle?: string | null;
+    /**
+     * Descricao para o Google (ate 155 caracteres). Vazio = usa o resumo.
+     */
+    metaDescription?: string | null;
+  };
+  /**
+   * Opcional. Gera schema FAQPage e ajuda o post a aparecer em IAs e featured snippets.
+   */
+  faq?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Links das noticias usadas como base (exibidos no fim do artigo, dao credibilidade E-E-A-T).
+   */
+  sourceLinks?:
+    | {
+        url: string;
+        title?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   category: number | Category;
   author: number | Author;
   publishedAt: string;
@@ -290,6 +322,55 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Pautas descobertas pelo radar. O gerador de artigos consome as pendentes.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads".
+ */
+export interface Lead {
+  id: number;
+  topic: string;
+  /**
+   * Gerada pelo radar (slug do assunto). Evita pauta repetida.
+   */
+  topicKey: string;
+  kind: 'trend' | 'news';
+  /**
+   * Calculado pelo radar: volume de buscas + quantidade de fontes falando disso.
+   */
+  score?: number | null;
+  status: 'pending' | 'processing' | 'done' | 'discarded';
+  /**
+   * Quais termos de dorama/k-pop fizeram o radar aceitar essa pauta.
+   */
+  matchedKeywords?: string | null;
+  /**
+   * Ex.: "50 mil+ pesquisas". Vazio quando a pauta veio de feed.
+   */
+  trafficVolume?: string | null;
+  /**
+   * Links de noticias sobre o assunto (usados como base do artigo).
+   */
+  sources?:
+    | {
+        url: string;
+        title?: string | null;
+        outlet?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Preenchido quando o artigo e criado.
+   */
+  post?: (number | null) | Post;
+  /**
+   * Observacoes do robo (ex.: motivo do descarte).
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -340,6 +421,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'leads';
+        value: number | Lead;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -395,6 +480,26 @@ export interface PostsSelect<T extends boolean = true> {
   content?: T;
   contentHtml?: T;
   tags?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+      };
+  faq?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  sourceLinks?:
+    | T
+    | {
+        url?: T;
+        title?: T;
+        id?: T;
+      };
   category?: T;
   author?: T;
   publishedAt?: T;
@@ -491,6 +596,31 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "leads_select".
+ */
+export interface LeadsSelect<T extends boolean = true> {
+  topic?: T;
+  topicKey?: T;
+  kind?: T;
+  score?: T;
+  status?: T;
+  matchedKeywords?: T;
+  trafficVolume?: T;
+  sources?:
+    | T
+    | {
+        url?: T;
+        title?: T;
+        outlet?: T;
+        id?: T;
+      };
+  post?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

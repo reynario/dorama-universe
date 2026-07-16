@@ -605,6 +605,70 @@ img {
   margin-top: 18px;
 }
 
+/* ---------- FAQ (schema FAQPage) ---------- */
+.faq {
+  margin: 36px 0 8px;
+}
+.faq__item {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.faq__question {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 14px 16px;
+  list-style: none;
+}
+.faq__question::-webkit-details-marker {
+  display: none;
+}
+.faq__question::before {
+  content: '+';
+  color: var(--purple);
+  font-weight: 800;
+  margin-right: 10px;
+}
+.faq__item[open] .faq__question::before {
+  content: '–';
+}
+.faq__answer {
+  padding: 0 16px 14px 40px;
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+/* ---------- Fontes consultadas ---------- */
+.sources {
+  margin: 28px 0 8px;
+  padding: 14px 18px;
+  background: #f7f3fa;
+  border-left: 4px solid var(--purple);
+  border-radius: 0 10px 10px 0;
+}
+.sources__title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 8px;
+  color: var(--purple);
+}
+.sources__list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.sources__list a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--purple);
+}
+
 /* ---------- Comments ---------- */
 .comments {
   margin-top: 36px;

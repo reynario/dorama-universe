@@ -99,6 +99,56 @@ export const Posts: CollectionConfig = {
       relationTo: 'tags',
       hasMany: true,
     },
+    // ----- SEO / robo de conteudo -----
+    {
+      name: 'seo',
+      label: 'SEO',
+      type: 'group',
+      fields: [
+        {
+          name: 'metaTitle',
+          label: 'Meta title',
+          type: 'text',
+          maxLength: 70,
+          admin: {
+            description: 'Titulo para o Google (ate 60-65 caracteres). Vazio = usa o titulo do post.',
+          },
+        },
+        {
+          name: 'metaDescription',
+          label: 'Meta description',
+          type: 'textarea',
+          maxLength: 170,
+          admin: {
+            description: 'Descricao para o Google (ate 155 caracteres). Vazio = usa o resumo.',
+          },
+        },
+      ],
+    },
+    {
+      name: 'faq',
+      label: 'Perguntas frequentes (FAQ)',
+      type: 'array',
+      admin: {
+        description: 'Opcional. Gera schema FAQPage e ajuda o post a aparecer em IAs e featured snippets.',
+      },
+      fields: [
+        { name: 'question', label: 'Pergunta', type: 'text', required: true },
+        { name: 'answer', label: 'Resposta', type: 'textarea', required: true },
+      ],
+    },
+    {
+      name: 'sourceLinks',
+      label: 'Fontes consultadas',
+      type: 'array',
+      admin: {
+        description: 'Links das noticias usadas como base (exibidos no fim do artigo, dao credibilidade E-E-A-T).',
+      },
+      fields: [
+        { name: 'url', label: 'URL', type: 'text', required: true },
+        { name: 'title', label: 'Titulo', type: 'text' },
+      ],
+    },
     // ----- Campos da barra lateral (metadados) -----
     {
       name: 'category',

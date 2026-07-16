@@ -13,6 +13,7 @@ import { Categories } from './collections/Categories'
 import { Authors } from './collections/Authors'
 import { Posts } from './collections/Posts'
 import { Comments } from './collections/Comments'
+import { Leads } from './collections/Leads'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -24,7 +25,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Posts, Categories, Authors, Tags, Comments, Media, Users],
+  collections: [Posts, Categories, Authors, Tags, Comments, Media, Users, Leads],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   // URL publica do backend (Portainer). Usada pra montar links absolutos.

@@ -13,30 +13,90 @@ export const dynamic = 'force-dynamic'
 
 type Props = { params: Promise<{ slug: string }> }
 
+const SITE_URL = 'https://doramauniverse.com'
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post não encontrado — Dorama Universe' }
   const hero = mediaUrl(post.heroImage)
+  // Campos de SEO dedicados (preenchidos pelo robo de conteudo ou no admin);
+  // sem eles, cai no titulo/resumo do post.
+  const metaTitle = post.seo?.metaTitle || post.title
+  const metaDescription = post.seo?.metaDescription || post.excerpt
   return {
-    title: `${post.title} — Dorama Universe`,
-    description: post.excerpt,
+    title: `${metaTitle} — Dorama Universe`,
+    description: metaDescription,
     alternates: { canonical: `/posts/${post.slug}` },
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title: metaTitle,
+      description: metaDescription,
       type: 'article',
       publishedTime: post.publishedAt,
+      modifiedTime: post.updatedAt,
       url: `/posts/${post.slug}`,
       images: hero ? [{ url: hero }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
-      title: post.title,
-      description: post.excerpt,
+      title: metaTitle,
+      description: metaDescription,
       images: hero ? [hero] : undefined,
     },
   }
+}
+
+// Dados estruturados (JSON-LD) do artigo: NewsArticle + FAQPage quando houver
+// FAQ. E o que o Google e as IAs leem para entender e citar o post.
+function buildJsonLd(post: NonNullable<Awaited<ReturnType<typeof getPostBySlug>>>) {
+  const category = post.category as Category | undefined
+  const author = post.author as Author | undefined
+  const tags = (post.tags ?? []).filter((t): t is Tag => typeof t === 'object')
+  const hero = mediaUrl(post.heroImage)
+  const url = `${SITE_URL}/posts/${post.slug}`
+
+  const graph: Record<string, unknown>[] = [
+    {
+      '@type': 'NewsArticle',
+      '@id': `${url}#article`,
+      mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+      headline: post.title,
+      description: post.seo?.metaDescription || post.excerpt,
+      image: hero ? [hero] : undefined,
+      datePublished: post.publishedAt,
+      dateModified: post.updatedAt || post.publishedAt,
+      inLanguage: 'pt-BR',
+      articleSection: category?.name,
+      keywords: tags.length ? tags.map((t) => t.name).join(', ') : undefined,
+      author: {
+        '@type': 'Person',
+        name: author?.name ?? 'Redação Dorama Universe',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Dorama Universe',
+        url: SITE_URL,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.svg` },
+      },
+      ...(post.sourceLinks?.length
+        ? { citation: post.sourceLinks.map((s) => s.url) }
+        : {}),
+    },
+  ]
+
+  if (post.faq?.length) {
+    graph.push({
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      mainEntity: post.faq.map((f) => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    })
+  }
+
+  return { '@context': 'https://schema.org', '@graph': graph }
 }
 
 export default async function PostPage({ params }: Props) {
@@ -53,9 +113,16 @@ export default async function PostPage({ params }: Props) {
     category ? getRelated(category.id, post.id) : Promise.resolve({ docs: [] as never[] }),
   ])
 
+  const faq = post.faq ?? []
+  const sources = post.sourceLinks ?? []
+
   return (
     <>
       <Header />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(post)) }}
+      />
       <article className="article">
         <Link href="/" className="article__back">
           ← Voltar
@@ -93,6 +160,33 @@ export default async function PostPage({ params }: Props) {
             className="article__body"
             dangerouslySetInnerHTML={{ __html: fixContentImages(post.contentHtml) }}
           />
+        )}
+
+        {faq.length > 0 && (
+          <section className="faq">
+            <h2 className="section__title">Perguntas frequentes</h2>
+            {faq.map((f, i) => (
+              <details key={f.id ?? i} className="faq__item">
+                <summary className="faq__question">{f.question}</summary>
+                <p className="faq__answer">{f.answer}</p>
+              </details>
+            ))}
+          </section>
+        )}
+
+        {sources.length > 0 && (
+          <section className="sources">
+            <h2 className="sources__title">Fontes</h2>
+            <ul className="sources__list">
+              {sources.map((s, i) => (
+                <li key={s.id ?? i}>
+                  <a href={s.url} target="_blank" rel="nofollow noopener noreferrer">
+                    {s.title || new URL(s.url).hostname.replace(/^www\./, '')}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         {tags.length > 0 && (

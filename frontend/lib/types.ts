@@ -26,6 +26,18 @@ export type Tag = {
   slug: string
 }
 
+export type FaqItem = {
+  id?: string
+  question: string
+  answer: string
+}
+
+export type SourceLink = {
+  id?: string
+  url: string
+  title?: string | null
+}
+
 export type Post = {
   id: number
   title: string
@@ -41,6 +53,13 @@ export type Post = {
   likes?: number | null
   featured?: boolean | null
   publishedAt: string
+  updatedAt?: string
+  seo?: {
+    metaTitle?: string | null
+    metaDescription?: string | null
+  } | null
+  faq?: FaqItem[] | null
+  sourceLinks?: SourceLink[] | null
   _status?: 'draft' | 'published'
 }
 
