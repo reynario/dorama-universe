@@ -13,6 +13,9 @@ import configPromise from '../src/payload.config'
  * Mudar status (pending | processing | done | discarded):
  *   $env:ACTION='mark'; $env:LEAD='12'; $env:STATUS='processing'; pnpm payload run scripts/leads.ts
  *   (opcional: $env:NOTES='motivo...')
+ *
+ * Contar pendentes "quentes" (usado pelo cron para decidir se chama a IA):
+ *   ACTION=count MIN_SCORE=45 pnpm payload run scripts/leads.ts   -> imprime PENDENTES=<n>
  */
 
 const ACTION = process.env.ACTION || 'list'
@@ -37,6 +40,15 @@ if (ACTION === 'list') {
       `#${String(l.id).padEnd(5)} [${String(l.score).padStart(3)}] (${l.kind}/${l.status}) ${l.topic}  | fontes: ${l.sources?.length ?? 0} | ${l.matchedKeywords ?? ''}`,
     )
   }
+} else if (ACTION === 'count') {
+  const min = parseInt(process.env.MIN_SCORE || '45', 10)
+  const res = await payload.find({
+    collection: 'leads',
+    where: { and: [{ status: { equals: 'pending' } }, { score: { greater_than_equal: min } }] },
+    limit: 0,
+    depth: 0,
+  })
+  console.log(`PENDENTES=${res.totalDocs}`)
 } else if (ACTION === 'show') {
   if (!LEAD) {
     console.error('Defina LEAD=<id>')

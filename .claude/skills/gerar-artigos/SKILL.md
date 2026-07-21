@@ -12,6 +12,11 @@ melhores pautas pendentes, apurar, escrever, gerar capa e salvar como
 Argumento opcional: quantidade de artigos (padrão: **2**) ou um id de lead
 específico (ex.: `/gerar-artigos 3` ou `/gerar-artigos lead 42`).
 
+> **Ambiente**: os exemplos abaixo usam sintaxe PowerShell (`$env:X='1'; cmd`).
+> No servidor Linux (cron), use o prefixo bash equivalente: `X=1 cmd`.
+> Ex.: `ACTION=show LEAD=4 pnpm payload run scripts/leads.ts`.
+> Arquivos temporários (JSON dos artigos): use `/tmp` no Linux.
+
 ## Passo 1 — Atualizar e escolher pautas
 
 ```powershell
