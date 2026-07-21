@@ -146,6 +146,10 @@ export interface Post {
   excerpt: string;
   heroImage?: (number | null) | Media;
   /**
+   * Versao da capa com titulo/marca, usada so em compartilhamentos (WhatsApp, redes, Discover). Vazio = usa a capa normal.
+   */
+  ogImage?: (number | null) | Media;
+  /**
    * Conteudo dos posts novos. Posts importados usam o campo HTML abaixo.
    */
   content?: {
@@ -477,6 +481,7 @@ export interface PostsSelect<T extends boolean = true> {
   slug?: T;
   excerpt?: T;
   heroImage?: T;
+  ogImage?: T;
   content?: T;
   contentHtml?: T;
   tags?: T;

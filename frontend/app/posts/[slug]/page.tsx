@@ -19,7 +19,9 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post não encontrado — Dorama Universe' }
-  const hero = mediaUrl(post.heroImage)
+  // Compartilhamentos usam a versao social da capa (com titulo/marca);
+  // sem ela, cai na capa normal.
+  const hero = mediaUrl(post.ogImage) || mediaUrl(post.heroImage)
   // Campos de SEO dedicados (preenchidos pelo robo de conteudo ou no admin);
   // sem eles, cai no titulo/resumo do post.
   const metaTitle = post.seo?.metaTitle || post.title
@@ -52,7 +54,7 @@ function buildJsonLd(post: NonNullable<Awaited<ReturnType<typeof getPostBySlug>>
   const category = post.category as Category | undefined
   const author = post.author as Author | undefined
   const tags = (post.tags ?? []).filter((t): t is Tag => typeof t === 'object')
-  const hero = mediaUrl(post.heroImage)
+  const hero = mediaUrl(post.ogImage) || mediaUrl(post.heroImage)
   const url = `${SITE_URL}/posts/${post.slug}`
 
   const graph: Record<string, unknown>[] = [

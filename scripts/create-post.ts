@@ -143,11 +143,12 @@ if (!author) {
   process.exit(1)
 }
 
-// ---------- capa ----------
-let coverBuffer: Buffer
+// ---------- capa (2 versoes: limpa p/ heroImage, social p/ ogImage) ----------
+let cleanBuffer: Buffer
+let socialBuffer: Buffer | null = null
 let coverNote = ''
 if (art.cover?.file && existsSync(art.cover.file)) {
-  coverBuffer = readFileSync(art.cover.file)
+  cleanBuffer = readFileSync(art.cover.file)
   coverNote = `arquivo local (${art.cover.file})`
 } else {
   const gen = await generateCover({
@@ -157,21 +158,39 @@ if (art.cover?.file && existsSync(art.cover.file)) {
     type: art.cover?.type,
     tmdbId: art.cover?.tmdbId,
   })
-  coverBuffer = gen.buffer
+  cleanBuffer = gen.cleanBuffer
+  socialBuffer = gen.buffer
   coverNote = gen.tmdbUsed ? `TMDB (${gen.tmdbLabel})` : 'template brand (sem TMDB)'
 }
 
+const alt = art.cover?.alt || art.title
 const media = await payload.create({
   collection: 'media',
-  data: { alt: art.cover?.alt || art.title },
+  data: { alt },
   file: {
-    data: coverBuffer,
+    data: cleanBuffer,
     mimetype: 'image/jpeg',
     name: `${slug}-capa.jpg`,
-    size: coverBuffer.length,
+    size: cleanBuffer.length,
   },
 })
-console.log(`  capa: ${coverNote} -> media #${(media as any).id}`)
+let ogMediaId: number | undefined
+if (socialBuffer) {
+  const ogMedia = await payload.create({
+    collection: 'media',
+    data: { alt },
+    file: {
+      data: socialBuffer,
+      mimetype: 'image/jpeg',
+      name: `${slug}-social.jpg`,
+      size: socialBuffer.length,
+    },
+  })
+  ogMediaId = (ogMedia as any).id
+}
+console.log(
+  `  capa: ${coverNote} -> media #${(media as any).id}${ogMediaId ? ` + social #${ogMediaId}` : ''}`,
+)
 
 // ---------- post ----------
 const post = await payload.create({
@@ -182,6 +201,7 @@ const post = await payload.create({
     excerpt: art.excerpt,
     contentHtml: art.contentHtml,
     heroImage: (media as any).id,
+    ogImage: ogMediaId,
     category: category.id,
     author: author.id,
     tags: tagIds,

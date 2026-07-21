@@ -25,7 +25,8 @@ export type CoverOptions = {
 }
 
 export type CoverResult = {
-  buffer: Buffer // JPEG 1200x630 pronto para subir
+  buffer: Buffer // versao SOCIAL (template completo com titulo) - usar como imagem OG
+  cleanBuffer: Buffer // versao LIMPA (so a foto + credito) - usar como heroImage
   tmdbUsed: boolean
   tmdbLabel?: string // nome do resultado usado (para conferencia/alt)
 }
@@ -234,18 +235,37 @@ export async function generateCover(opts: CoverOptions): Promise<CoverResult> {
     base = sharp(Buffer.from(brandBackgroundSvg()))
   }
 
-  const overlay = Buffer.from(
-    overlaySvg({
-      title: opts.title,
-      category: opts.category,
-      credit: tmdbUsed ? 'imagem: themoviedb.org' : undefined,
-    }),
-  )
+  // Achata a base uma vez e monta as duas versoes a partir dela.
+  const baseBuffer = await base.jpeg({ quality: 92 }).toBuffer()
+  const credit = tmdbUsed ? 'imagem: themoviedb.org' : undefined
 
-  const buffer = await base
-    .composite([{ input: overlay, top: 0, left: 0 }])
+  // Versao social: template completo (marca + selo + titulo + credito).
+  const buffer = await sharp(baseBuffer)
+    .composite([
+      {
+        input: Buffer.from(
+          overlaySvg({ title: opts.title, category: opts.category, credit }),
+        ),
+        top: 0,
+        left: 0,
+      },
+    ])
     .jpeg({ quality: 84, mozjpeg: true })
     .toBuffer()
 
-  return { buffer, tmdbUsed, tmdbLabel }
+  // Versao limpa: so a foto + credito discreto (o card/artigo ja mostram o
+  // titulo em texto; credito fica dentro da area visivel mesmo com corte 16:10).
+  const cleanOverlay = credit
+    ? `<svg width="${COVER_W}" height="${COVER_H}" xmlns="http://www.w3.org/2000/svg">
+  <text x="${COVER_W - 120}" y="${COVER_H - 16}" text-anchor="end" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.55)">${escapeXml(credit)}</text>
+</svg>`
+    : null
+  const cleanBuffer = cleanOverlay
+    ? await sharp(baseBuffer)
+        .composite([{ input: Buffer.from(cleanOverlay), top: 0, left: 0 }])
+        .jpeg({ quality: 84, mozjpeg: true })
+        .toBuffer()
+    : await sharp(baseBuffer).jpeg({ quality: 84, mozjpeg: true }).toBuffer()
+
+  return { buffer, cleanBuffer, tmdbUsed, tmdbLabel }
 }

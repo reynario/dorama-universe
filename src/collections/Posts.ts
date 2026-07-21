@@ -74,6 +74,16 @@ export const Posts: CollectionConfig = {
       relationTo: 'media',
     },
     {
+      name: 'ogImage',
+      label: 'Imagem social (OG)',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description:
+          'Versao da capa com titulo/marca, usada so em compartilhamentos (WhatsApp, redes, Discover). Vazio = usa a capa normal.',
+      },
+    },
+    {
       name: 'content',
       label: 'Conteudo',
       type: 'richText',

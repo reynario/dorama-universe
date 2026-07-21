@@ -44,13 +44,25 @@ const gen = await generateCover({
 })
 console.log(`Capa: ${gen.tmdbUsed ? `TMDB (${gen.tmdbLabel})` : 'template brand (sem TMDB)'}`)
 
+const alt = process.env.ALT || post.title
+const stamp = Date.now()
 const media = await payload.create({
   collection: 'media',
-  data: { alt: process.env.ALT || post.title },
+  data: { alt },
+  file: {
+    data: gen.cleanBuffer,
+    mimetype: 'image/jpeg',
+    name: `${post.slug}-capa-${stamp}.jpg`,
+    size: gen.cleanBuffer.length,
+  },
+})
+const ogMedia = await payload.create({
+  collection: 'media',
+  data: { alt },
   file: {
     data: gen.buffer,
     mimetype: 'image/jpeg',
-    name: `${post.slug}-capa-${Date.now()}.jpg`,
+    name: `${post.slug}-social-${stamp}.jpg`,
     size: gen.buffer.length,
   },
 })
@@ -59,18 +71,22 @@ const isDraft = post._status !== 'published'
 await payload.update({
   collection: 'posts',
   id: Number(POST_ID),
-  data: { heroImage: (media as any).id },
+  data: { heroImage: (media as any).id, ogImage: (ogMedia as any).id },
   draft: isDraft,
 })
 
-// apaga a capa antiga para nao acumular lixo no R2
-const oldId = typeof post.heroImage === 'object' ? post.heroImage?.id : post.heroImage
-if (oldId) {
-  await payload
-    .delete({ collection: 'media', id: oldId })
-    .then(() => console.log(`Capa antiga (media #${oldId}) apagada.`))
-    .catch((e) => console.log(`Capa antiga mantida: ${e.message}`))
+// apaga as capas antigas para nao acumular lixo no R2
+for (const key of ['heroImage', 'ogImage'] as const) {
+  const oldId = typeof post[key] === 'object' ? post[key]?.id : post[key]
+  if (oldId) {
+    await payload
+      .delete({ collection: 'media', id: oldId })
+      .then(() => console.log(`${key} antigo (media #${oldId}) apagado.`))
+      .catch((e) => console.log(`${key} antigo mantido: ${e.message}`))
+  }
 }
 
-console.log(`Post #${POST_ID} atualizado com a nova capa (media #${(media as any).id}).`)
+console.log(
+  `Post #${POST_ID} atualizado: capa limpa #${(media as any).id} + social #${(ogMedia as any).id}.`,
+)
 process.exit(0)

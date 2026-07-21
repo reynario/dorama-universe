@@ -44,6 +44,7 @@ export type Post = {
   slug: string
   excerpt: string
   heroImage?: Media | number | null
+  ogImage?: Media | number | null
   content?: unknown
   contentHtml?: string | null
   category?: Category | number | null
