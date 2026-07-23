@@ -16,7 +16,7 @@ set -u
 REPO_DIR="${REPO_DIR:-/opt/dorama-universe}"   # clone do repositorio no servidor
 MIN_SCORE="${MIN_SCORE:-45}"                   # score minimo para acionar a IA
 ARTIGOS_POR_CICLO="${ARTIGOS_POR_CICLO:-2}"    # maximo de artigos por execucao
-CLAUDE_BIN="${CLAUDE_BIN:-claude}"             # caminho do Claude Code CLI
+CLAUDE_BIN="${CLAUDE_BIN:-/root/.local/bin/claude}"  # caminho do Claude Code CLI (absoluto: cron nao tem ~/.local/bin no PATH)
 LOCK_FILE="/tmp/robo-dorama.lock"
 
 cd "$REPO_DIR" || { echo "[robo] ERRO: repo nao encontrado em $REPO_DIR"; exit 1; }
