@@ -134,7 +134,9 @@ function overlaySvg(opts: { title: string; category?: string; credit?: string })
 
   // fonte maior para titulos curtos
   const fontSize = title.length <= 45 ? 58 : title.length <= 80 ? 48 : 40
-  const maxChars = Math.floor((COVER_W - 140) / (fontSize * 0.52))
+  // 0.58em por caractere: Arial weight 800 e mais larga que a estimativa
+  // anterior (0.52) e titulos com palavras em caixa alta estouravam a borda
+  const maxChars = Math.floor((COVER_W - 140) / (fontSize * 0.58))
   const lines = wrapTitle(title, maxChars, 3)
   const lineH = Math.round(fontSize * 1.18)
 
