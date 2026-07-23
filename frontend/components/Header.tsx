@@ -1,7 +1,5 @@
 import Link from 'next/link'
 
-const ADMIN_URL = `${process.env.NEXT_PUBLIC_API_URL || ''}/admin`
-
 export default function Header() {
   return (
     <header className="site-header">
@@ -21,10 +19,6 @@ export default function Header() {
             🔍
           </button>
         </form>
-
-        <a className="btn btn--admin" href={ADMIN_URL}>
-          Entrar ADM
-        </a>
       </div>
     </header>
   )

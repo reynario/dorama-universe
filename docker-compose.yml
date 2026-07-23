@@ -28,6 +28,8 @@ services:
       PAYLOAD_SECRET: ${PAYLOAD_SECRET}
       # IMPORTANTE: em producao use o dominio real, ex.: https://doramauniverse.com
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL}
+      # Dominio do site publico. Usado no CORS e no botao Preview do admin.
+      FRONTEND_URL: ${FRONTEND_URL}
       # --- Cloudflare R2 (imagens) ---
       R2_BUCKET: ${R2_BUCKET}
       R2_ENDPOINT: ${R2_ENDPOINT}

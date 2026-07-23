@@ -52,6 +52,19 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   return res.docs[0] ?? null
 }
 
+// Pre-visualizacao de rascunho: busca o post (incluindo a versao draft)
+// autenticando com o token JWT de quem esta logado no painel do Payload.
+// O token vem na URL gerada pelo botao Preview do admin; se for invalido ou
+// tiver expirado, a API nega e devolvemos null.
+export async function getDraftPost(id: string, token: string): Promise<Post | null> {
+  const res = await fetch(`${API}/api/posts/${id}?draft=true&depth=2`, {
+    headers: { Authorization: `JWT ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) return null
+  return res.json() as Promise<Post>
+}
+
 export function getComments(postId: number) {
   const p = new URLSearchParams()
   p.set('where[post][equals]', String(postId))

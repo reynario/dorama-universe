@@ -5,11 +5,25 @@ import type { CollectionConfig } from 'payload'
 export const Posts: CollectionConfig = {
   slug: 'posts',
   access: {
-    read: () => true,
+    // Visitantes leem apenas posts publicados; rascunhos so aparecem para
+    // quem esta autenticado no painel (necessario para o botao Preview).
+    read: ({ req }) => {
+      if (req.user) return true
+      return { _status: { equals: 'published' } }
+    },
   },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'author', 'publishedAt', '_status'],
+    // Botao "Preview" no editor: abre o rascunho renderizado no site publico.
+    // O token de sessao do usuario vai na URL e o site usa ele para buscar o
+    // rascunho na API — o link so funciona para quem tem acesso ao painel.
+    preview: (doc, { token }) => {
+      const id = (doc as { id?: number | string }).id
+      if (!id || !token) return null
+      const site = process.env.FRONTEND_URL || 'https://doramauniverse.com'
+      return `${site}/preview/${id}?token=${encodeURIComponent(token)}`
+    },
   },
   // Habilita rascunho/publicado (aba "Status" no admin).
   versions: {
