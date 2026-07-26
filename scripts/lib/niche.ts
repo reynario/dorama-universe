@@ -9,6 +9,9 @@ export const GENERIC_TERMS = [
   'k-drama',
   'kdrama',
   'k-dramas',
+  'kdramas',
+  'k drama', // Autocomplete costuma devolver sem hifen
+  'k dramas',
   'drama coreano',
   'serie coreana',
   'novela coreana',

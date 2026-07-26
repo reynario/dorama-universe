@@ -21,6 +21,8 @@ import configPromise from '../src/payload.config'
 const ACTION = process.env.ACTION || 'list'
 const LEAD = process.env.LEAD
 const STATUS = process.env.STATUS
+// Quantidade de pautas no ACTION=list (padrao 30). Ex.: LIMIT=100
+const LIMIT = parseInt(process.env.LIMIT || '30', 10)
 
 const payload = await getPayload({ config: configPromise })
 
@@ -29,7 +31,7 @@ if (ACTION === 'list') {
     collection: 'leads',
     where: { status: { in: ['pending', 'processing'] } },
     sort: '-score',
-    limit: 30,
+    limit: LIMIT,
     depth: 0,
   })
   if (res.docs.length === 0) {

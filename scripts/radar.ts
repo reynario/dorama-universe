@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser'
-import { matchNiche } from './lib/niche'
+import { matchNiche, normalize } from './lib/niche'
 import { slugify } from './lib/text'
 
 /**
@@ -10,6 +10,7 @@ import { slugify } from './lib/text'
  *   1. Google Trends "Em alta" Brasil (RSS)          -> termos explodindo agora
  *   2. Google News BR (RSS de busca por dorama/k-pop) -> o que a imprensa cobre
  *   3. Feeds internacionais (Soompi, Koreaboo, ...)   -> furos para adaptar ao BR
+ *   4. Google Autocomplete (sementes do nicho)        -> o que as pessoas digitam
  *
  * Como rodar:
  *   pnpm payload run scripts/radar.ts          -> grava leads novos
@@ -18,6 +19,8 @@ import { slugify } from './lib/text'
  * Variaveis opcionais:
  *   MAX_LEADS=15   -> maximo de leads criados por execucao
  *   FRESH_HOURS=48 -> ignora noticias mais antigas que isso
+ *   LEAD_TTL_NEWS_DAYS=7     -> descarta pauta de noticia/trend pendente ha mais que isso
+ *   LEAD_TTL_SUGGEST_DAYS=30 -> idem para pautas do Google Autocomplete (evergreen)
  */
 
 const DRY = process.env.DRY === '1'
@@ -32,6 +35,21 @@ const INTL_FEEDS: { url: string; outlet: string }[] = [
   { url: 'https://www.soompi.com/feed', outlet: 'Soompi' },
   { url: 'https://www.koreaboo.com/feed/', outlet: 'Koreaboo' },
   { url: 'https://www.dramabeans.com/feed/', outlet: 'Dramabeans' },
+]
+
+// Sementes digitadas no Google Autocomplete. As sugestoes devolvidas sao o que
+// os leitores estao pesquisando de verdade (ex.: "dorama agente kim 2 temporada").
+const AUTOCOMPLETE_SEEDS = [
+  'dorama',
+  'dorama onde assistir',
+  'dorama final explicado',
+  'dorama netflix',
+  'dorama 2 temporada',
+  'k-drama',
+  'kdrama',
+  'k-drama netflix',
+  'k-pop',
+  'comeback k-pop',
 ]
 
 // ---------- tipos ----------
@@ -123,7 +141,7 @@ function upsert(map: Map<string, Candidate>, c: Candidate) {
 
 // ---------- 1. Google Trends "Em alta" (BR) ----------
 async function collectTrends(map: Map<string, Candidate>) {
-  console.log('1/3 Google Trends BR (em alta)...')
+  console.log('1/4 Google Trends BR (em alta)...')
   const xml = await fetchXml(TRENDS_RSS)
   const items = asArray<any>(xml?.rss?.channel?.item)
   let hits = 0
@@ -162,7 +180,7 @@ async function collectTrends(map: Map<string, Candidate>) {
 
 // ---------- 2. Google News BR ----------
 async function collectGoogleNews(map: Map<string, Candidate>) {
-  console.log('2/3 Google News BR...')
+  console.log('2/4 Google News BR...')
   for (const q of GOOGLE_NEWS_QUERIES) {
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`
     const xml = await fetchXml(url)
@@ -203,7 +221,7 @@ async function collectGoogleNews(map: Map<string, Candidate>) {
 
 // ---------- 3. Feeds internacionais ----------
 async function collectIntlFeeds(map: Map<string, Candidate>) {
-  console.log('3/3 Feeds internacionais...')
+  console.log('3/4 Feeds internacionais...')
   for (const feed of INTL_FEEDS) {
     const xml = await fetchXml(feed.url)
     const items = asArray<any>(xml?.rss?.channel?.item)
@@ -236,11 +254,71 @@ async function collectIntlFeeds(map: Map<string, Candidate>) {
   }
 }
 
+// ---------- 4. Google Autocomplete ----------
+async function collectAutocomplete(map: Map<string, Candidate>) {
+  console.log('4/4 Google Autocomplete...')
+  for (const seed of AUTOCOMPLETE_SEEDS) {
+    const url = `https://suggestqueries.google.com/complete/search?client=firefox&hl=pt-BR&gl=br&q=${encodeURIComponent(seed)}`
+    let suggestions: string[] = []
+    try {
+      const res = await fetch(url, {
+        headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!res.ok) {
+        console.warn(`  [aviso] autocomplete "${seed}" respondeu ${res.status}`)
+        continue
+      }
+      const data = JSON.parse(await res.text())
+      suggestions = asArray<string>(data?.[1]).map((s) => String(s))
+    } catch (err) {
+      console.warn(`  [aviso] autocomplete "${seed}" falhou: ${(err as Error).message}`)
+      continue
+    }
+
+    let hits = 0
+    for (const sug of suggestions) {
+      const clean = sug.trim()
+      // ignora a propria semente e sugestoes genericas demais (ex.: "dorama romantico");
+      // sem entidade conhecida, exige pelo menos 3 palavras para valer como pauta
+      if (!clean || normalize(clean) === normalize(seed)) continue
+      const match = matchNiche(clean)
+      if (!match.matched) continue
+      if (!match.entity && clean.split(/\s+/).length < 3) continue
+
+      const topicKey = match.entity
+        ? `${slugify(match.entity)}-${today()}` // agrupa com noticias do mesmo assunto
+        : `sug-${slugify(clean).slice(0, 60)}` // evergreen: cria uma unica vez
+
+      upsert(map, {
+        topic: clean,
+        topicKey,
+        kind: 'news',
+        // demanda real de busca: com entidade conhecida passa do corte do cron (45)
+        score: 35 + (match.entity ? 15 : 0),
+        matchedKeywords: match.keywords,
+        trafficVolume: `autocomplete: "${seed}"`,
+        sources: [
+          {
+            url: `https://www.google.com/search?q=${encodeURIComponent(clean)}`,
+            title: clean,
+            outlet: 'Google Autocomplete',
+          },
+        ],
+      })
+      hits++
+    }
+    console.log(`  "${seed}": ${suggestions.length} sugestoes, ${hits} aproveitadas.`)
+    await new Promise((r) => setTimeout(r, 300)) // pausa curta entre consultas
+  }
+}
+
 // ---------- main ----------
 const map = new Map<string, Candidate>()
 await collectTrends(map)
 await collectGoogleNews(map)
 await collectIntlFeeds(map)
+await collectAutocomplete(map)
 
 const candidates = [...map.values()].sort((a, b) => b.score - a.score)
 console.log(`\nTotal: ${candidates.length} pautas candidatas.`)
@@ -292,4 +370,43 @@ for (const c of candidates) {
 }
 
 console.log(`\n${created} leads novos criados (${known.size} ja existiam).`)
+
+// ---------- limpeza: expira pautas paradas na fila ----------
+// Noticia velha nao vira artigo bom. Pendente ha mais de N dias -> descartada
+// (o robo nunca vai escrever sobre ela e a fila fica so com o que e atual).
+// Pautas do Autocomplete representam demanda de busca continua, entao duram mais.
+const TTL_NEWS = parseInt(process.env.LEAD_TTL_NEWS_DAYS || '7', 10)
+const TTL_SUGGEST = parseInt(process.env.LEAD_TTL_SUGGEST_DAYS || '30', 10)
+{
+  const cutoffNews = new Date(Date.now() - TTL_NEWS * 86400_000)
+  const stale = await payload.find({
+    collection: 'leads',
+    where: {
+      and: [
+        { status: { equals: 'pending' } },
+        { createdAt: { less_than: cutoffNews.toISOString() } },
+      ],
+    },
+    limit: 500,
+    depth: 0,
+  })
+  let expired = 0
+  for (const l of stale.docs as any[]) {
+    const isSuggest = String(l.trafficVolume ?? '').startsWith('autocomplete')
+    const ttlDays = isSuggest ? TTL_SUGGEST : TTL_NEWS
+    const ageDays = (Date.now() - new Date(l.createdAt).getTime()) / 86400_000
+    if (ageDays <= ttlDays) continue
+    await payload.update({
+      collection: 'leads',
+      id: l.id,
+      data: {
+        status: 'discarded',
+        notes: `Expirada pelo radar: pendente ha ${Math.floor(ageDays)} dias (limite ${ttlDays}).`,
+      },
+    })
+    expired++
+  }
+  if (expired > 0) console.log(`${expired} pautas antigas expiradas (>${TTL_NEWS}d noticias, >${TTL_SUGGEST}d autocomplete).`)
+}
+
 process.exit(0)
