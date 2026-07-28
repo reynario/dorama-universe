@@ -25,9 +25,6 @@ export const GENERIC_TERMS = [
   'atriz coreana',
   'cantora coreana',
   'cantor coreano',
-  'coreia do sul',
-  'sul-coreano',
-  'sul-coreana',
   'hallyu',
   'mnet',
   'melon chart',
@@ -241,8 +238,12 @@ export const STRONG_ENTITIES = [
 
 // Entidades fracas: nomes curtos/ambiguos. So contam se aparecer tambem um
 // termo generico ou entidade forte no mesmo texto (evita falso positivo:
-// "Lisa" pode ser qualquer pessoa; "V" e uma letra).
+// "Lisa" pode ser qualquer pessoa; "V" e uma letra; "Coreia do Sul" sozinha
+// pode ser politica/economia, nao dorama).
 export const WEAK_ENTITIES = [
+  'coreia do sul',
+  'sul-coreano',
+  'sul-coreana',
   'lisa',
   'jennie',
   'jisoo',
@@ -266,17 +267,21 @@ export const WEAK_ENTITIES = [
   'nct',
 ]
 
-// Normaliza para comparacao: minusculas e sem acentos.
+// Normaliza para comparacao: minusculas, sem acentos e hifen vira espaco
+// (o Trends e o Autocomplete devolvem "kim soo hyun"; o vocabulario tem "kim soo-hyun").
 export function normalize(s: string): string {
   return s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function hasWord(text: string, term: string): boolean {
   // Busca com fronteira de palavra (evita "jin" dentro de "Beijing").
-  const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const esc = normalize(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`(^|[^a-z0-9])${esc}([^a-z0-9]|$)`, 'i').test(text)
 }
 

@@ -7,7 +7,7 @@ import { slugify } from './lib/text'
  * na collection "leads" do Payload para o gerador de artigos consumir.
  *
  * Fontes (todas gratuitas):
- *   1. Google Trends "Em alta" Brasil (RSS)          -> termos explodindo agora
+ *   1. Google Trends "Em alta" Brasil (API + RSS)     -> termos explodindo agora
  *   2. Google News BR (RSS de busca por dorama/k-pop) -> o que a imprensa cobre
  *   3. Feeds internacionais (Soompi, Koreaboo, ...)   -> furos para adaptar ao BR
  *   4. Google Autocomplete (sementes do nicho)        -> o que as pessoas digitam
@@ -19,6 +19,7 @@ import { slugify } from './lib/text'
  * Variaveis opcionais:
  *   MAX_LEADS=15   -> maximo de leads criados por execucao
  *   FRESH_HOURS=48 -> ignora noticias mais antigas que isso
+ *   TRENDS_HOURS=48 -> janela da lista "em alta" do Trends (a API aceita ate ~168)
  *   LEAD_TTL_NEWS_DAYS=7     -> descarta pauta de noticia/trend pendente ha mais que isso
  *   LEAD_TTL_SUGGEST_DAYS=30 -> idem para pautas do Google Autocomplete (evergreen)
  */
@@ -26,6 +27,7 @@ import { slugify } from './lib/text'
 const DRY = process.env.DRY === '1'
 const MAX_LEADS = parseInt(process.env.MAX_LEADS || '15', 10)
 const FRESH_HOURS = parseInt(process.env.FRESH_HOURS || '48', 10)
+const TRENDS_HOURS = parseInt(process.env.TRENDS_HOURS || '48', 10)
 
 const TRENDS_RSS = 'https://trends.google.com.br/trending/rss?geo=BR'
 
@@ -140,8 +142,105 @@ function upsert(map: Map<string, Candidate>, c: Candidate) {
 }
 
 // ---------- 1. Google Trends "Em alta" (BR) ----------
+// API interna da pagina "Em alta" nova. Aceita janela de ate ~168h e devolve
+// centenas de termos, contra so os 10 do RSS (que fica como fallback). Cada
+// item traz o termo, as noticias que o explicam e as buscas derivadas — tudo
+// entra no matchNiche, entao um ator ou dorama e reconhecido mesmo quando o
+// termo em alta sozinho e ambiguo.
+// Nao e documentada; se o formato mudar, o radar cai para o RSS sem quebrar.
+async function fetchTrendingApi(): Promise<any[] | null> {
+  try {
+    const body = new URLSearchParams({
+      'f.req': JSON.stringify([
+        [['i0OFE', JSON.stringify([null, null, 'BR', 3, 'pt-BR', TRENDS_HOURS, 1]), null, 'generic']],
+      ]),
+    })
+    const res = await fetch(
+      'https://trends.google.com/_/TrendsUi/data/batchexecute?rpcids=i0OFE&hl=pt-BR',
+      {
+        method: 'POST',
+        headers: {
+          'user-agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+          'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body,
+        signal: AbortSignal.timeout(20_000),
+      },
+    )
+    if (!res.ok) {
+      console.warn(`  [aviso] API do Trends respondeu ${res.status}`)
+      return null
+    }
+    const line = (await res.text()).split('\n').find((l) => l.includes('i0OFE'))
+    if (!line) return null
+    const items = JSON.parse(JSON.parse(line)[0][2])?.[1]
+    return Array.isArray(items) && items.length > 0 ? items : null
+  } catch (err) {
+    console.warn(`  [aviso] API do Trends falhou: ${(err as Error).message}`)
+    return null
+  }
+}
+
 async function collectTrends(map: Map<string, Candidate>) {
-  console.log('1/4 Google Trends BR (em alta)...')
+  console.log(`1/4 Google Trends BR (em alta, ${TRENDS_HOURS}h)...`)
+  const apiItems = await fetchTrendingApi()
+  if (apiItems) {
+    let hits = 0
+    for (const item of apiItems) {
+      const term = String(item?.[0] ?? '')
+      if (!term) continue
+
+      // [1] = noticias [titulo, url, veiculo, ...]; [6] = volume aproximado;
+      // [9] = buscas derivadas do termo (ex.: "lovely runner 2 temporada")
+      const news = asArray<any>(item?.[1])
+      const derived = asArray<any>(item?.[9]).map((q) => String(q))
+
+      // O proprio termo e do nicho (ator, dorama, grupo)? Aceita direto.
+      // Senao, exige que 2+ noticias/buscas derivadas sejam do nicho — uma so
+      // costuma ser mencao de passagem (ex.: "Lula cita doramas..." num termo
+      // de politica), mas um dorama novo fora do vocabulario tem varias.
+      const termMatch = matchNiche(term)
+      const contextMatches = [...news.map((n) => String(n?.[0] ?? '')), ...derived]
+        .map((t) => matchNiche(t))
+        .filter((m) => m.matched)
+      if (!termMatch.matched && contextMatches.length < 2) continue
+      const match = termMatch.matched ? termMatch : contextMatches[0]
+      for (const m of contextMatches) {
+        for (const k of m.keywords) if (!match.keywords.includes(k)) match.keywords.push(k)
+      }
+
+      const volume = Number(item?.[6]) || 0
+      const sources: Source[] = news.slice(0, 5).map((n) => ({
+        url: String(n?.[1] ?? ''),
+        title: String(n?.[0] ?? ''),
+        outlet: String(n?.[2] ?? ''),
+      }))
+      if (sources.length === 0) {
+        sources.push({
+          url: `https://www.google.com/search?q=${encodeURIComponent(term)}`,
+          title: term,
+          outlet: 'Google Trends',
+        })
+      }
+
+      upsert(map, {
+        topic: term,
+        topicKey: `trend-${slugify(term)}-${month()}`,
+        kind: 'trend',
+        // termo em alta no Trends e a pauta mais valiosa do radar
+        score: 80 + Math.min(20, Math.round(Math.log10(Math.max(volume, 10)) * 5)),
+        matchedKeywords: match.keywords,
+        trafficVolume: volume ? `${volume.toLocaleString('pt-BR')}+` : undefined,
+        sources,
+      })
+      hits++
+    }
+    console.log(`  ${apiItems.length} termos na API, ${hits} do nicho.`)
+    return
+  }
+
+  console.log('  API indisponivel; usando RSS (top 10 nacional).')
   const xml = await fetchXml(TRENDS_RSS)
   const items = asArray<any>(xml?.rss?.channel?.item)
   let hits = 0
