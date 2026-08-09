@@ -17,7 +17,7 @@ export default function CategoryTabs({
         {categories.map((cat) => (
           <Link
             key={cat.id}
-            href={`/?categoria=${cat.slug}`}
+            href={`/categoria/${cat.slug}`}
             className={`cat-tab ${active === cat.slug ? 'cat-tab--active' : ''}`}
           >
             {cat.name}

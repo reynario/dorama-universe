@@ -28,6 +28,8 @@ const RESERVED = new Set([
   'wp-includes',
   'feed',
   'es',
+  'categoria',
+  'pagina',
   '_next',
 ])
 

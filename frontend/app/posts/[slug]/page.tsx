@@ -3,6 +3,7 @@ import { getComments, getPostBySlug, getRelated } from '@/lib/api'
 import type { Author, Category, Tag } from '@/lib/types'
 import Header from '@/components/Header'
 import ArticleView from '@/components/ArticleView'
+import SiteFooter from '@/components/SiteFooter'
 import { mediaUrl } from '@/lib/utils'
 
 // ISR: a pagina do post e renderizada sob demanda e depois servida do cache
@@ -132,11 +133,7 @@ export default async function PostPage({ params }: Props) {
       />
       <ArticleView post={post} comments={comments} totalDocs={totalDocs} related={related} />
 
-      <footer className="site-footer">
-        <div className="container">
-          <p>Dorama Universe — Doramas &amp; K-Pop · O universo Hallyu em um só lugar.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   )
 }

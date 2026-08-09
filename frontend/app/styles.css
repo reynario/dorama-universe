@@ -603,6 +603,42 @@ img {
   color: var(--muted);
   font-size: 14px;
 }
+.page-nums {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.page-num {
+  min-width: 34px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.page-num:hover {
+  color: var(--purple);
+  border-color: var(--purple);
+}
+.page-num--active {
+  color: #fff;
+  background: var(--purple);
+  border-color: transparent;
+}
+.page-gap {
+  color: var(--muted);
+  font-size: 14px;
+}
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
 
 /* ---------- Related posts ---------- */
 .related {

@@ -21,8 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (catRes.ok) {
       const { docs } = (await catRes.json()) as { docs: LeanCat[] }
       for (const c of docs) {
+        // Caminho proprio: /?categoria=<slug> era so uma variacao da home aos
+        // olhos do Google e nao merecia estar no sitemap.
         entries.push({
-          url: `${SITE}/?categoria=${c.slug}`,
+          url: `${SITE}/categoria/${c.slug}`,
           changeFrequency: 'daily',
           priority: 0.6,
         })
