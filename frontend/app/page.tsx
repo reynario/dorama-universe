@@ -7,7 +7,12 @@ import FeaturedPost from '@/components/FeaturedPost'
 import PostCard from '@/components/PostCard'
 import AdSlot from '@/components/AdSlot'
 
-export const dynamic = 'force-dynamic'
+// A home le searchParams (categoria/q/page), entao ela continua sendo
+// renderizada por requisicao — mas sem 'force-dynamic' as chamadas da API
+// passam a usar o cache de fetch do Next, agora persistido no KV. As buscas
+// pesadas e iguais em toda pagina (categorias e contagem de comentarios) sao
+// resolvidas do cache em vez de irem ate o Payload a cada paginacao.
+export const revalidate = 60
 
 type Props = { searchParams: Promise<{ categoria?: string; q?: string; page?: string }> }
 

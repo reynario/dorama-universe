@@ -5,7 +5,22 @@ import Header from '@/components/Header'
 import ArticleView from '@/components/ArticleView'
 import { mediaUrl } from '@/lib/utils'
 
-export const dynamic = 'force-dynamic'
+// ISR: a pagina do post e renderizada sob demanda e depois servida do cache
+// (KV + Cache API regional, ver open-next.config.ts) por 1h. Antes isso era
+// 'force-dynamic', o que mandava Cache-Control: no-store e obrigava cada visita
+// — inclusive cada passada do Googlebot — a re-renderizar batendo na API do
+// Payload, com TTFB de 3-4s. Comentarios passam por moderacao antes de
+// aparecer, entao a defasagem do cache nao muda o que o leitor ve.
+export const revalidate = 3600
+
+// Sem generateStaticParams o Next nao registra a rota no prerender-manifest e
+// o revalidate acima nao cacheia a pagina — ela volta a ser SSR pura. Devolver
+// lista vazia registra a rota para ISR sob demanda sem prerenderizar nada no
+// build (nao da para gerar 1.4k posts batendo na API a cada deploy): o primeiro
+// acesso a cada post renderiza e grava no cache, os seguintes vem prontos.
+export async function generateStaticParams() {
+  return []
+}
 
 type Props = { params: Promise<{ slug: string }> }
 

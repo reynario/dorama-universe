@@ -3,8 +3,14 @@ import type { Category, Comment, Paginated, Post } from './types'
 // URL do backend Payload (Portainer). Definida no build da Cloudflare.
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
-async function api<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`, { next: { revalidate: 60 } })
+// Janela de cache dos dados de um post, alinhada com o revalidate de 1h da
+// pagina /posts/[slug]. Sem isso o conteudo do post herdaria os 60s do listing
+// e cada revalidacao em segundo plano voltaria a bater no Payload de minuto em
+// minuto, por post — o listing da home muda com frequencia, um artigo nao.
+const POST_TTL = 3600
+
+async function api<T>(path: string, revalidate = 60): Promise<T> {
+  const res = await fetch(`${API}${path}`, { next: { revalidate } })
   if (!res.ok) throw new Error(`API ${res.status} em ${path}`)
   return res.json() as Promise<T>
 }
@@ -39,7 +45,7 @@ export function getRelated(categoryId: number, excludeId: number, limit = 3) {
   p.set('sort', '-publishedAt')
   p.set('depth', '2')
   p.set('limit', String(limit))
-  return api<Paginated<Post>>(`/api/posts?${p.toString()}`)
+  return api<Paginated<Post>>(`/api/posts?${p.toString()}`, POST_TTL)
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
@@ -48,7 +54,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   p.set('where[_status][equals]', 'published')
   p.set('depth', '2')
   p.set('limit', '1')
-  const res = await api<Paginated<Post>>(`/api/posts?${p.toString()}`)
+  const res = await api<Paginated<Post>>(`/api/posts?${p.toString()}`, POST_TTL)
   return res.docs[0] ?? null
 }
 
@@ -72,7 +78,9 @@ export function getComments(postId: number) {
   p.set('sort', '-createdAt')
   p.set('depth', '0')
   p.set('limit', '100')
-  return api<Paginated<Comment>>(`/api/comments?${p.toString()}`)
+  // Comentarios so aparecem depois de aprovados no painel, entao acompanham a
+  // janela de cache da pagina do post sem prejuizo para o leitor.
+  return api<Paginated<Comment>>(`/api/comments?${p.toString()}`, POST_TTL)
 }
 
 // Busca todos os comentarios aprovados (depth 0) para contar por post na home.

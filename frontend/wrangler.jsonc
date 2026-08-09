@@ -8,6 +8,15 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Cache incremental do Next (ISR + cache de fetch) no KV. Sem isso o
+  // adaptador nao persiste nada entre requisicoes: toda visita re-renderiza a
+  // pagina e refaz as chamadas na API do Payload.
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "f1e03b639a4e43198e2d004f1f8557de"
+    }
+  ],
   "observability": {
     "enabled": true
   }
