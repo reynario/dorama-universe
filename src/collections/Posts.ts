@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { pingIndexNow, urlDoPost } from '@/lib/indexnow'
 
 // Posts = o coracao do blog. Cada artigo da home (card de destaque + grid)
 // e a pagina de leitura saem daqui.
@@ -28,6 +29,33 @@ export const Posts: CollectionConfig = {
   // Habilita rascunho/publicado (aba "Status" no admin).
   versions: {
     drafts: true,
+  },
+  hooks: {
+    // Avisa o IndexNow (Bing/Yandex/Seznam/Naver) assim que um post e publicado
+    // ou editado. O robo cria os artigos como rascunho, entao o momento que
+    // importa e a hora em que o humano clica em Publicar aqui no painel — e e
+    // exatamente esse salvamento que passa por este hook.
+    afterChange: [
+      ({ doc, previousDoc, operation }) => {
+        const post = doc as { slug?: string; _status?: string }
+        const anterior = previousDoc as { _status?: string } | undefined
+
+        // Rascunho nao vai para buscador. Despublicar tambem nao gera envio: o
+        // post volta a ser 404/410 e o proprio rastreamento resolve.
+        if (post._status !== 'published' || !post.slug) return
+
+        const acabouDePublicar = operation === 'create' || anterior?._status !== 'published'
+        const site = process.env.FRONTEND_URL || 'https://doramauniverse.com'
+
+        // Na estreia vale avisar tambem a home e a listagem da categoria, que
+        // acabaram de mudar. Em edicoes seguintes so o proprio post — reenviar a
+        // home a cada correcao de virgula gasta cota sem ganhar nada.
+        const urls = [urlDoPost(post.slug)]
+        if (acabouDePublicar) urls.push(site)
+
+        pingIndexNow(urls, acabouDePublicar ? 'publicacao' : 'edicao')
+      },
+    ],
   },
   // Endpoint publico para curtir um post: POST /api/posts/:id/like
   // Incrementa o contador no servidor (o visitante nao precisa de login).
